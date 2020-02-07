@@ -1,6 +1,6 @@
 use std::io::{stdout, Write};
 
-use actix_web::{App, get, HttpServer, Responder, web};
+use actix_web::{App, get, HttpServer, Responder, web, HttpRequest,middleware,post};
 use actix_web::HttpResponse;
 use crossterm::{
     cursor, ExecutableCommand,
@@ -18,48 +18,22 @@ use log4rs::config::{Appender, Root, Config};
 use log4rs::append::file::FileAppender;
 use log4rs::encode::pattern::PatternEncoder;
 use log4rs::filter::threshold::ThresholdFilter;
+use serde::{Deserialize, Serialize};
 
 mod dto;
 use dto::response;
 use crate::dto::response::{testResp, Resp};
 
-//fn main()-> Result<()> {
-//    println!("Hello, world!");
-//
-//    let mut stdout = stdout();
-//
-//    stdout.execute(terminal::Clear(terminal::ClearType::All))?;
-//
-//    for y in 0..40 {
-//        for x in 0..150 {
-//            if (y == 0 || y == 40 - 1) || (x == 0 || x == 150 - 1) {
-//                // in this loop we are more efficient by not flushing the buffer.
-//                stdout
-//                    .queue(cursor::MoveTo(x,y))?
-//                    .queue(style::PrintStyledContent( "█".magenta()))?;
-//            }
-//        }
-//    }
-//    stdout.flush()?;
-//    Ok(())
-//
-//
-//}
-
 fn init_logger(){
     log4rs::init_file("log.yml", Default::default()).unwrap();
 
 //    loop {
-//        thread::sleep(Duration::from_secs(1));
-//        warn!("main");
-//        error!("error main");
-//        info!("a");
-//        a::test();
-//    }
-
-}
-
-fn mainTest(){
+////        thread::sleep(Duration::from_secs(1));
+////        warn!("main");
+////        error!("error main");
+////        info!("a");
+////        a::test();
+////    }
 
 }
 
@@ -76,13 +50,32 @@ mod a{
 async fn main() -> std::io::Result<()> {
 
     init_logger();
-    HttpServer::new(|| App::new().service(index))
+
+    HttpServer::new(|| {
+        App::new().service(index)
+            .wrap(middleware::Logger::default())
+            .service(echo_json)
+    })
         .bind("127.0.0.1:8080")?
         .run()
         .await
 
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct JsonObj {
+    name: String,
+    number: i32,
+}
+
+#[post("/test_json")]
+async fn echo_json(item:web::Json<JsonObj>,req:HttpRequest) -> HttpResponse{
+
+    debug!("request: {:?}",req);
+    debug!("model: {:?}", item);
+
+    HttpResponse::Ok().json(item.0)
+}
 
 #[get("/{id}/{name}/index.html")]
 async fn index(info: web::Path<(u32, String)>) -> impl Responder {

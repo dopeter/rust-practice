@@ -1,4 +1,4 @@
-refresh_rate: 5 seconds
+refresh_rate: 1 seconds
 
 appenders:
     console:
@@ -7,7 +7,7 @@ appenders:
             pattern: "{d(%+)(local)} [{t}] {h({l})} {M}:{m}{n}"
         filters:
             - kind: threshold
-              level: error
+              level: trace
     file:
         kind: file
         path: error.log
