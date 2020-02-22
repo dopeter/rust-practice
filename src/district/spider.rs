@@ -38,7 +38,7 @@ async fn fetch_json(url: hyper::Uri) -> Result<Vec<User>> {
 }
 
 pub async fn fetch_district() -> Result<DistrictAPIDTO> {
-    let url = "http://restapi.amap.com/v3/config/district?key=2de9724e3f9dfe3777082a7e481163e0&keywords=%E5%9B%9B%E5%B7%9D&subdistrict=3".parse()?;
+    let url = "http://restapi.amap.com/v3/config/district?key=&keywords=%E5%9B%9B%E5%B7%9D&subdistrict=3".parse()?;
 
     let client = Client::new();
 
