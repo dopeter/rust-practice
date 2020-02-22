@@ -24,17 +24,23 @@ mod dto;
 use dto::response;
 use crate::dto::response::{testResp, Resp};
 
+mod district;
+use district::spider;
+use crate::district::spider::{test_spider, test_http_client, fetch_district};
+
+/**
+road map:
+practice
+    1 get remote json data to mysql
+    2 web api apply to some biz flow
+    3 cross platform compile
+
+concept:
+    1 macro learning
+**/
+
 fn init_logger(){
     log4rs::init_file("log.yml", Default::default()).unwrap();
-
-//    loop {
-////        thread::sleep(Duration::from_secs(1));
-////        warn!("main");
-////        error!("error main");
-////        info!("a");
-////        a::test();
-////    }
-
 }
 
 mod a{
@@ -51,9 +57,17 @@ async fn main() -> std::io::Result<()> {
 
     init_logger();
 
+    let res=fetch_district().await;
+
+    match res {
+        Err(err) => println!("error : {}",err),
+        Ok(dis)=>println!("ok")
+    }
+
     HttpServer::new(|| {
-        App::new().service(index)
+        App::new()
             .wrap(middleware::Logger::default())
+            .service(index)
             .service(echo_json)
     })
         .bind("127.0.0.1:8080")?
@@ -70,6 +84,8 @@ struct JsonObj {
 
 #[post("/test_json")]
 async fn echo_json(item:web::Json<JsonObj>,req:HttpRequest) -> HttpResponse{
+
+    let aa=1/0;
 
     debug!("request: {:?}",req);
     debug!("model: {:?}", item);
