@@ -3,6 +3,7 @@ extern crate serde_json;
 
 use hyper::Client;
 use serde::Deserialize;
+use serde::Serialize;
 use bytes::{buf::BufExt};
 
 
@@ -38,7 +39,7 @@ async fn fetch_json(url: hyper::Uri) -> Result<Vec<User>> {
 }
 
 pub async fn fetch_district() -> Result<DistrictAPIDTO> {
-    let url = "http://restapi.amap.com/v3/config/district?key=&keywords=%E5%9B%9B%E5%B7%9D&subdistrict=3".parse()?;
+    let url = "http://restapi.amap.com/v3/config/district?key=&keywords=&subdistrict=3".parse()?;
 
     let client = Client::new();
 
@@ -47,6 +48,8 @@ pub async fn fetch_district() -> Result<DistrictAPIDTO> {
     let body = hyper::body::aggregate(res).await?;
 
     let district_info = serde_json::from_reader(body.reader())?;
+
+
 
     Ok(district_info)
 }
@@ -58,7 +61,7 @@ struct User {
     name: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize,Deserialize, Debug)]
 pub struct DistrictAPIDTO {
     status: String,
     info: String,
@@ -67,13 +70,13 @@ pub struct DistrictAPIDTO {
     districts: Vec<DistrictDTO>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize,Deserialize, Debug)]
 pub struct SuggestionDTO {
     keywords: Vec<String>,
     cities: Vec<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize,Deserialize, Debug)]
 pub struct DistrictDTO {
     // citycode: Vec<String>, //maybe array , maybe string , serde will occur error.
     adcode: String,

@@ -1,3 +1,6 @@
+
+extern crate diesel;
+
 use std::io::{stdout, Write};
 
 use actix_web::{App, get, HttpServer, Responder, web, HttpRequest,middleware,post};
@@ -10,7 +13,6 @@ use crossterm::{
 use std::thread;
 
 use log::{error, info, warn, trace, debug, LevelFilter};
-use log4rs;
 use std::time::Duration;
 use log4rs::append::console::{ConsoleAppender, Target};
 use log4rs::encode::json::JsonEncoder;
@@ -28,16 +30,8 @@ mod district;
 use district::spider;
 use crate::district::spider::{test_spider, test_http_client, fetch_district};
 
-/**
-road map:
-practice
-    1 get remote json data to mysql
-    2 web api apply to some biz flow
-    3 cross platform compile
+use rust_practice::test_sql::store::test_sql;
 
-concept:
-    1 macro learning
-**/
 
 fn init_logger(){
     log4rs::init_file("log.yml", Default::default()).unwrap();
@@ -50,18 +44,26 @@ mod a{
         error!("from mod a")
     }
 }
-
+//echo DATABASE_URL=jdbc:mysql://192.168.0.113:3309/DICT?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC&&nullCatalogMeansCurrent=true&allowPublicKeyRetrieval=true > .env
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
 
     init_logger();
 
+    test_sql();
+
     let res=fetch_district().await;
 
     match res {
         Err(err) => println!("error : {}",err),
-        Ok(dis)=>println!("ok")
+        Ok(dis)=>{
+
+            let serialized = serde_json::to_string(&dis);
+
+            println!("serialized = {:?}", serialized);
+            println!("ok")
+        }
     }
 
     HttpServer::new(|| {
@@ -86,6 +88,9 @@ struct JsonObj {
 async fn echo_json(item:web::Json<JsonObj>,req:HttpRequest) -> HttpResponse{
 
     let aa=1/0;
+
+    // use rust_practice::schema::district::dsl::*;
+
 
     debug!("request: {:?}",req);
     debug!("model: {:?}", item);
