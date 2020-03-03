@@ -49,8 +49,6 @@ pub async fn fetch_district() -> Result<DistrictAPIDTO> {
 
     let district_info = serde_json::from_reader(body.reader())?;
 
-
-
     Ok(district_info)
 }
 

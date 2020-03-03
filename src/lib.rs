@@ -6,4 +6,5 @@ pub mod dto;
 pub mod schema;
 pub mod district;
 pub mod test_sql;
+pub mod data_build;
 

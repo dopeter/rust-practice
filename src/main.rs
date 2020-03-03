@@ -32,6 +32,10 @@ use crate::district::spider::{test_spider, test_http_client, fetch_district};
 
 use rust_practice::test_sql::store::test_sql;
 
+mod data_build;
+use data_build::district_builder::read_file_content;
+use crate::data_build::district_builder::{process_entity, walk_dir};
+
 
 fn init_logger(){
     log4rs::init_file("log.yml", Default::default()).unwrap();
@@ -49,22 +53,28 @@ mod a{
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
 
+    let testA= "510000";
+    let testB=& testA[0..4];
+    println!("bbb : {}", testB);
+
     init_logger();
 
-    test_sql();
+    test_read_file().await;
 
-    let res=fetch_district().await;
+    // test_sql();
 
-    match res {
-        Err(err) => println!("error : {}",err),
-        Ok(dis)=>{
-
-            let serialized = serde_json::to_string(&dis);
-
-            println!("serialized = {:?}", serialized);
-            println!("ok")
-        }
-    }
+    // let res=fetch_district().await;
+    //
+    // match res {
+    //     Err(err) => println!("error : {}",err),
+    //     Ok(dis)=>{
+    //
+    //         let serialized = serde_json::to_string(&dis);
+    //
+    //         println!("serialized = {:?}", serialized);
+    //         println!("ok")
+    //     }
+    // }
 
     HttpServer::new(|| {
         App::new()
@@ -75,6 +85,23 @@ async fn main() -> std::io::Result<()> {
         .bind("127.0.0.1:8080")?
         .run()
         .await
+
+}
+
+async fn test_read_file(){
+
+    walk_dir("district_data/").await;
+
+    // let fileContent=read_file_content(&"district_data/100000.1.json".to_string()).await;
+
+    // match fileContent {
+    //     Err(err) => println!("error : {}",err),
+    //     Ok(content) => {
+    //         // println!("content : {}",content);
+    //         process_entity(content).await;
+    //     }
+    // }
+
 
 }
 

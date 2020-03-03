@@ -10,6 +10,9 @@ Some rust pracice
         
         docker run -p 3306:3306 --name mysql1 -e MYSQL_ROOT_PASSWORD=secret -d mysql:latest --default-authentication-plugin=mysql_native_password
         
+        test diesel
+            
+            diesel migration run , cli will build schema.cs automatically.
         
     2 web api apply to some biz flow
     3 cross platform compile
