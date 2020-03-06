@@ -6,6 +6,8 @@ use std::ptr::null;
 use std::rc::Rc;
 use std::cell::RefCell;
 use failure::_core::cell::Cell;
+use std::io::Error;
+use std::env::consts::OS;
 
 /**
 todo
@@ -17,7 +19,60 @@ todo
 
 type SingleResult<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
-pub async fn walk_dir(dir: &str) {
+pub async fn build_district_str(dir: &str) -> SingleResult<DistrictDto> {
+    let pathList = walk_dir(dir).await;
+
+    let mut root: DistrictDto = DistrictDto {
+        adcode: "".to_string(),
+        name: "".to_string(),
+        // polyline: "".to_string(),
+        center: "".to_string(),
+        level: "".to_string(),
+        districts: Vec::new(),
+    };
+
+    match pathList {
+        Err(err) => { Err(err) }
+        Ok(pathList) => {
+            for path in pathList {
+                let content = read_file_content(&path).await;
+                let entity = process_entity(content.unwrap()).await;
+
+                println!("current path : {}", path);
+
+                match entity {
+                    Err(err) => println!("parse entity error : {}", err),
+                    Ok(entity) => {
+                        if path.contains("100000") && root.adcode.is_empty() {
+                            root = entity;
+                        } else {
+                            let found = hangNormalProvince(&mut root, &entity.districts[0]);
+                            println!("normal found result: {}", found);
+                            if found == false {
+                                if hangMunicipality(&mut root, &entity.districts[0]) == false {
+                                    println!("normal or municipality are failure. {} ", path)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                println!("------------")
+            }
+
+            Ok(root)
+            // let outPutFile = dir.to_string() + "1_all.json";
+            //
+            // fs::write(outPutFile, serde_json::to_string(&root).unwrap());
+        }
+    }
+}
+
+pub async fn save_json_file(path: &str, content: &String) {
+    fs::write(path, serde_json::to_string(content).unwrap());
+}
+
+pub async fn walk_dir(dir: &str) -> SingleResult<Vec<String>> {
     let mut pathList = Vec::new();
 
     for entry in (fs::read_dir(dir)).unwrap() {
@@ -32,50 +87,11 @@ pub async fn walk_dir(dir: &str) {
 
     pathList.sort();
 
-    let mut root: DistrictDto = DistrictDto {
-        adcode: "".to_string(),
-        name: "".to_string(),
-        // polyline: "".to_string(),
-        center: "".to_string(),
-        level: "".to_string(),
-        districts: Vec::new(),
-    };
-
-    for path in pathList {
-        let content = read_file_content(&path).await;
-        let entity = process_entity(content.unwrap()).await;
-        ;
-
-        println!("current path : {}", path);
-
-        match entity {
-            Err(err) => println!("parse entity error : {}", err),
-            Ok(entity) => {
-                if (path.contains("100000") && root.adcode.is_empty()) {
-                    root = entity;
-                } else {
-                    let found=hangNormalProvince(&mut root, &entity.districts[0]);
-                    println!("normal found result: {}", found);
-                    if  found== false {
-                        if hangMunicipality(&mut root, &entity.districts[0]) == false {
-                            println!("normal or municipality are failure. {} ",path)
-                        }
-                    }
-                }
-            }
-        }
-
-        // let json = serde_json::to_string(&root);
-        //
-        // println!("json result : {}", json.unwrap());
-        println!("------------")
-    }
-
-    fs::write("district_data/1_all.json", serde_json::to_string(&root).unwrap());
+    Ok(pathList)
 }
 
 fn hangNormalProvince(root: &mut DistrictDto, node: &DistrictDto) -> bool {
-    let mut found=false;
+    let mut found = false;
 
     for district in root.districts.iter_mut() {
 
@@ -89,16 +105,14 @@ fn hangNormalProvince(root: &mut DistrictDto, node: &DistrictDto) -> bool {
             //     district.polyline = node.polyline.to_string();
             // }
 
-            found=true;
+            found = true;
             break;
-
         } else {
-            found= hangNormalProvince(district.borrow_mut(), node);
+            found = hangNormalProvince(district.borrow_mut(), node);
 
             if found {
                 break;
             }
-
         }
     }
 
@@ -117,7 +131,7 @@ fn hangMunicipality(root: &mut DistrictDto, node: &DistrictDto) -> bool {
             found = true;
             break;
         } else {
-            found=hangMunicipality(district.borrow_mut(), node);
+            found = hangMunicipality(district.borrow_mut(), node);
 
             if found {
                 break;
@@ -171,3 +185,75 @@ impl Clone for DistrictDto {
         };
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::data_build::district_builder::{build_district_str, DistrictDto};
+    use std::borrow::Borrow;
+    use failure::_core::cmp::max;
+
+    #[tokio::test]
+    async fn test1() {
+        test2().await;
+
+        let dto = build_district_str("district_data/").await;
+
+        match dto {
+            Err(err) => panic!("{}", err),
+            Ok(dto) => {
+
+                let level=checkDistrictLevel(&dto.districts[0],1);
+                println!("Level : {}",level);
+
+                // assert!(2==level, "level must be 2");
+
+                println!("frist level : {}",dto.name);
+                println!("second level : {}",dto.districts.len());
+                println!("third level : {}",dto.districts[0].districts[0].name);
+            }
+        }
+    }
+
+    async fn test2() {
+        println!("test2");
+    }
+
+    fn checkDistrictLevel(dto: &DistrictDto, mut level: i32) -> i32 {
+
+        let mut childLevel=level;
+        let mut maxChildLevel=level;
+
+        if dto.districts.len() > 0 {
+            level += 1;
+
+            for district in dto.districts.iter() {
+                childLevel=checkDistrictLevel(&district,level);
+
+                if(maxChildLevel<childLevel){
+                    maxChildLevel=childLevel;
+                }
+
+                if level==2 && childLevel<maxChildLevel{
+                    maxChildLevel=childLevel
+                }
+
+                // if(level==2 && district.name.contains("北京")){
+                //     println!(" 2 {}",childLevel);
+                // }
+                if level==2{
+                    println!("Level: {} , child : {} ,name: {} , code :{}",level,maxChildLevel,district.name,district.adcode);
+                }
+            }
+
+
+        }
+
+        maxChildLevel
+    }
+
+
+
+}
+
+
+

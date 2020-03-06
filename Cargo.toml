@@ -20,6 +20,9 @@ serde_json = "1.0"
 bytes = "0.5"
 encoding = "0.2"
 
+# async
+tokio = { version = "0.2", features = ["full"] }
+
 # mysql orm
 diesel = { version = "1.4.0", features = ["mysql","chrono"] }
 dotenv = "0.10"
