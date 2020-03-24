@@ -15,6 +15,9 @@ todo
 2 add output result test func
 3 vec iter_mut func description
 4 improve to multi thread or concurrent
+
+2020-3-18
+difference in &str and string
 */
 
 type SingleResult<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
@@ -68,8 +71,8 @@ pub async fn build_district_str(dir: &str) -> SingleResult<DistrictDto> {
     }
 }
 
-pub async fn save_json_file(path: &str, content: &String) {
-    fs::write(path, serde_json::to_string(content).unwrap());
+pub async fn save_json_file(path: &str, content: &DistrictDto) {
+    fs::write(path, serde_json::to_string(&content).unwrap());
 }
 
 pub async fn walk_dir(dir: &str) -> SingleResult<Vec<String>> {
@@ -162,7 +165,7 @@ pub struct DistrictDto {
     #[serde(default)]
     adcode: String,
     #[serde(default)]
-    name: String,
+    pub name: String,
     // #[serde(default)]
     // polyline: String,
     #[serde(default)]
@@ -170,7 +173,7 @@ pub struct DistrictDto {
     #[serde(default)]
     level: String,
     #[serde(default)]
-    districts: Vec<DistrictDto>,
+    pub districts: Vec<DistrictDto>,
 }
 
 impl Clone for DistrictDto {
@@ -188,9 +191,10 @@ impl Clone for DistrictDto {
 
 #[cfg(test)]
 mod tests {
-    use crate::data_build::district_builder::{build_district_str, DistrictDto};
+    use crate::data_build::district_builder::{build_district_str, DistrictDto, save_json_file};
     use std::borrow::Borrow;
     use failure::_core::cmp::max;
+    use std::fs;
 
     #[tokio::test]
     async fn test1() {
@@ -201,17 +205,26 @@ mod tests {
         match dto {
             Err(err) => panic!("{}", err),
             Ok(dto) => {
-
-                let level=checkDistrictLevel(&dto.districts[0],1);
-                println!("Level : {}",level);
+                let level = checkDistrictLevel(&dto.districts[0], 1);
+                println!("Level : {}", level);
 
                 // assert!(2==level, "level must be 2");
 
-                println!("frist level : {}",dto.name);
-                println!("second level : {}",dto.districts.len());
-                println!("third level : {}",dto.districts[0].districts[0].name);
+                println!("frist level : {}", dto.name);
+                println!("second level : {}", dto.districts.len());
+                println!("third level : {}", dto.districts[0].districts[0].name);
+
+                save_json_file("district_data/1_all.json", &dto).await;
+
+                // test3(&dto);
+
+                println!("test ad code {}",dto.adcode)
             }
         }
+    }
+
+    fn test3(content: &DistrictDto){
+        println!("test ad code {}",content.adcode)
     }
 
     async fn test2() {
@@ -219,40 +232,34 @@ mod tests {
     }
 
     fn checkDistrictLevel(dto: &DistrictDto, mut level: i32) -> i32 {
-
-        let mut childLevel=level;
-        let mut maxChildLevel=level;
+        let mut childLevel = level;
+        let mut maxChildLevel = level;
 
         if dto.districts.len() > 0 {
             level += 1;
 
             for district in dto.districts.iter() {
-                childLevel=checkDistrictLevel(&district,level);
+                childLevel = checkDistrictLevel(&district, level);
 
-                if(maxChildLevel<childLevel){
-                    maxChildLevel=childLevel;
+                if (maxChildLevel < childLevel) {
+                    maxChildLevel = childLevel;
                 }
 
-                if level==2 && childLevel<maxChildLevel{
-                    maxChildLevel=childLevel
+                if level == 2 && childLevel < maxChildLevel {
+                    maxChildLevel = childLevel
                 }
 
                 // if(level==2 && district.name.contains("北京")){
                 //     println!(" 2 {}",childLevel);
                 // }
-                if level==2{
-                    println!("Level: {} , child : {} ,name: {} , code :{}",level,maxChildLevel,district.name,district.adcode);
+                if level == 2 {
+                    println!("Level: {} , child : {} ,name: {} , code :{}", level, maxChildLevel, district.name, district.adcode);
                 }
             }
-
-
         }
 
         maxChildLevel
     }
-
-
-
 }
 
 

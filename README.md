@@ -22,6 +22,8 @@ Some rust pracice
     
         how to handle exception , use ? or expect()
         
+            https://lotabout.me/2017/rust-error-handling/
+        
         walk macro code of diesel
             connection pool
             macro design

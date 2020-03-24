@@ -10,7 +10,7 @@ use crossterm::{
     QueueableCommand, Result, style::{self, Colorize}, terminal
 };
 
-use std::thread;
+use std::{thread, fs};
 
 use log::{error, info, warn, trace, debug, LevelFilter};
 use std::time::Duration;
@@ -34,7 +34,8 @@ use rust_practice::test_sql::store::test_sql;
 
 mod data_build;
 use data_build::district_builder::read_file_content;
-use crate::data_build::district_builder::{process_entity, walk_dir};
+use crate::data_build::district_builder::{process_entity, walk_dir, build_district_str, save_json_file};
+use std::borrow::Borrow;
 
 
 fn init_logger(){
@@ -90,7 +91,18 @@ async fn main() -> std::io::Result<()> {
 
 async fn test_read_file(){
 
-    walk_dir("district_data/").await;
+
+    let dto = build_district_str("district_data/").await;
+
+    match dto {
+        Err(err) => panic!("{}", err),
+        Ok(dto) => {
+            save_json_file("district_data/1_all.json", dto.borrow()).await;
+        }
+    }
+
+
+    // walk_dir("district_data/").await;
 
     // let fileContent=read_file_content(&"district_data/100000.1.json".to_string()).await;
 
